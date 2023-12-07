@@ -1,0 +1,28 @@
+@import "../../index.scss";
+
+.todo__container {
+    height: calc(100vh - 100px);
+    width: 50vw;
+    margin: 0 auto;
+}
+
+.todo__header {
+    display: flex;
+    justify-content: space-between;
+
+    p {
+        font-size: 20px;
+        font-weight: 500;
+    }
+
+    .Polaris-Button {
+        background-color: $color-primary;
+        color: white;
+    }
+}
+
+.todo__select {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
