@@ -39,7 +39,7 @@ const TodoPage = () => {
     };
 
     useEffect(() => {
-        if (listChecked.length === todos.length) {
+        if (listChecked.length === todos.length && listChecked.length) {
             setCheckAll(true);
         } else {
             setCheckAll(false);

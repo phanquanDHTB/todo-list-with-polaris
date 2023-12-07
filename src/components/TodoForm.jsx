@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 
 const TodoForm = forwardRef((props, ref) => {
     const { callbackCreate } = props;
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState("");
     useImperativeHandle(
         ref,
