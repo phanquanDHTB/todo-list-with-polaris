@@ -1,9 +1,9 @@
-import { Badge, Button, ButtonGroup, Page, ResourceItem, ResourceList, Text } from "@shopify/polaris";
+import { Badge, Button, ButtonGroup, Modal, Page, ResourceItem, ResourceList, Text, TextField } from "@shopify/polaris";
 import { useFetchTodoList } from "../../hooks/useFetchTodoList";
 import "./styles.scss";
-import { useEffect, useRef, useState } from "react";
-import TodoForm from "../../components/todoForm/TodoForm";
+import { useEffect, useState } from "react";
 import { fetchApi } from "../../utils/fetchApi";
+import { useModal } from "../../hooks/useModal";
 
 const TodoPage = () => {
     const url = import.meta.env.VITE_URL;
@@ -11,12 +11,21 @@ const TodoPage = () => {
     const { todos, setTodos, loading } = useFetchTodoList(url + "todos");
     const [selectedTodos, setSelectedTodos] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [inputValue, setInputValue] = useState("");
+
+    const { CustomModal, setIsOpen } = useModal(
+        <Modal.Section>
+            <TextField value={inputValue} onChange={(e) => setInputValue(e)} />
+        </Modal.Section>,
+        {
+            content: "Create",
+            onAction: () => handleAdd(inputValue),
+        }
+    );
 
     useEffect(() => {
         setIsLoading(loading);
     }, [loading]);
-
-    const todoFormRef = useRef();
 
     const handleComplete = async (ids, method) => {
         try {
@@ -55,6 +64,8 @@ const TodoPage = () => {
             const newTodo = await res.json();
             if (res.status === 200) {
                 setTodos((todos) => [...todos, newTodo.data]);
+                setInputValue("");
+                setIsOpen(false);
             }
         } catch (err) {
             console.log(err);
@@ -116,13 +127,14 @@ const TodoPage = () => {
                 <Button
                     tone="success"
                     onClick={() => {
-                        todoFormRef.current.setIsOpen(true);
+                        setIsOpen(true);
                     }}
                 >
                     Create
                 </Button>
             }
         >
+            {CustomModal}
             <ResourceList
                 items={todos}
                 renderItem={renderItem}
@@ -132,12 +144,6 @@ const TodoPage = () => {
                 loading={isLoading}
                 // promotedBulkActions={promotedBulkActions}
                 bulkActions={bulkActions}
-            />
-            <TodoForm
-                ref={todoFormRef}
-                callbackCreate={(data) => {
-                    handleAdd(data);
-                }}
             />
         </Page>
     );
