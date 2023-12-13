@@ -1,49 +1,65 @@
 import { Badge, Button, ButtonGroup, Page, ResourceItem, ResourceList, Text } from "@shopify/polaris";
 import { useFetchTodoList } from "../../hooks/useFetchTodoList";
 import "./styles.scss";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TodoForm from "../../components/todoForm/TodoForm";
 import { fetchApi } from "../../utils/fetchApi";
 
 const TodoPage = () => {
-    const { todos, setTodos, loading } = useFetchTodoList("http://localhost:5000/api/v1/todos");
+    const url = import.meta.env.VITE_URL;
+
+    const { todos, setTodos, loading } = useFetchTodoList(url + "todos");
     const [selectedTodos, setSelectedTodos] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(loading);
+    }, [loading]);
 
     const todoFormRef = useRef();
 
     const handleComplete = async (ids, method) => {
         try {
-            const res = await fetchApi("http://localhost:5000/api/v1/todo", method, ids);
+            setIsLoading(true);
+            const res = await fetchApi(url + "todo", method, ids);
             const newTodos = await res.json();
             if (res.status === 200) {
                 setTodos(newTodos.data);
             }
         } catch (err) {
             console.log(err);
+        } finally {
+            setIsLoading(false);
         }
     };
     const handleDelete = async (ids, method) => {
         const searchParams = new URLSearchParams({ ids: ids.join(",") });
         try {
-            const res = await fetchApi("http://localhost:5000/api/v1/todo?" + searchParams.toString(), method, {});
+            setIsLoading(true);
+            const res = await fetchApi(url + "todo?" + searchParams.toString(), method, {});
             if (res.status === 200) {
                 setTodos((todos) => todos.filter((todo) => !ids.includes(todo.id)));
                 setSelectedTodos((selectList) => selectList.filter((select) => !ids.includes(select)));
             }
         } catch (err) {
             console.log(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleAdd = async (data) => {
         try {
-            const res = await fetchApi("http://localhost:5000/api/v1/todo", "POST", { title: data, completed: false });
+            setIsLoading(true);
+            const res = await fetchApi(url + "todo", "POST", { title: data, completed: false });
             const newTodo = await res.json();
             if (res.status === 200) {
                 setTodos((todos) => [...todos, newTodo.data]);
             }
         } catch (err) {
             console.log(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -107,14 +123,13 @@ const TodoPage = () => {
                 </Button>
             }
         >
-            {/* <Button onClick={() => handleComplete(selectedTodos, "PUT")}>test</Button> */}
             <ResourceList
                 items={todos}
                 renderItem={renderItem}
                 selectable
                 onSelectionChange={setSelectedTodos}
                 selectedItems={selectedTodos}
-                loading={loading}
+                loading={isLoading}
                 // promotedBulkActions={promotedBulkActions}
                 bulkActions={bulkActions}
             />

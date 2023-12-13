@@ -18,4 +18,6 @@ const AppLayout = ({ children }) => {
     );
 };
 
+AppLayout.propTypes = { children: HTMLElement };
+
 export default AppLayout;
