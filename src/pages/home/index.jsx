@@ -1,111 +1,129 @@
-import { Button, Checkbox, Page } from "@shopify/polaris";
+import { Badge, Button, ButtonGroup, Page, ResourceItem, ResourceList, Text } from "@shopify/polaris";
 import { useFetchTodoList } from "../../hooks/useFetchTodoList";
 import "./styles.scss";
-import TodoItem from "../../components/TodoItem";
-import { useEffect, useRef, useState } from "react";
-import TodoForm from "../../components/TodoForm";
+import { useMemo, useRef, useState } from "react";
+import TodoForm from "../../components/todoForm/TodoForm";
+import { fetchApi } from "../../utils/fetchApi";
 
 const TodoPage = () => {
-    const { todos, setTodos } = useFetchTodoList();
-    const [checkAll, setCheckAll] = useState(false);
-    const [listChecked, setListChecked] = useState([]);
-
-    const setCheckTodo = (id) => {
-        if (listChecked.includes(id)) {
-            setListChecked((listChecked) => listChecked.filter((idTodo) => id !== idTodo));
-        } else {
-            setListChecked((listChecked) => [...listChecked, id]);
-        }
-    };
-
-    const handleComlete = () => {
-        setTodos((todos) =>
-            todos.map((todo) => {
-                if (listChecked.includes(todo.id)) {
-                    todo.completed = true;
-                }
-                return todo;
-            })
-        );
-    };
-    const handleDelete = () => {
-        setTodos((todos) => todos.filter((todo) => !listChecked.includes(todo.id)));
-    };
+    const { todos, setTodos, loading } = useFetchTodoList("http://localhost:5000/api/v1/todos");
+    const [selectedTodos, setSelectedTodos] = useState([]);
 
     const todoFormRef = useRef();
 
-    const createTodo = (content) => {
-        setTodos((todos) => [{ title: content, id: todos[todos.length - 1].id + 1, completed: false }, ...todos]);
+    const handleComplete = async (ids, method) => {
+        try {
+            const res = await fetchApi("http://localhost:5000/api/v1/todo", method, ids);
+            const newTodos = await res.json();
+            if (res.status === 200) {
+                setTodos(newTodos.data);
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    };
+    const handleDelete = async (ids, method) => {
+        const searchParams = new URLSearchParams({ ids: ids.join(",") });
+        try {
+            const res = await fetchApi("http://localhost:5000/api/v1/todo?" + searchParams.toString(), method, {});
+            if (res.status === 200) {
+                setTodos((todos) => todos.filter((todo) => !ids.includes(todo.id)));
+                setSelectedTodos((selectList) => selectList.filter((select) => !ids.includes(select)));
+            }
+        } catch (err) {
+            console.log(err);
+        }
     };
 
-    useEffect(() => {
-        if (listChecked.length === todos.length && listChecked.length) {
-            setCheckAll(true);
-        } else {
-            setCheckAll(false);
+    const handleAdd = async (data) => {
+        try {
+            const res = await fetchApi("http://localhost:5000/api/v1/todo", "POST", { title: data, completed: false });
+            const newTodo = await res.json();
+            if (res.status === 200) {
+                setTodos((todos) => [...todos, newTodo.data]);
+            }
+        } catch (err) {
+            console.log(err);
         }
-    }, [listChecked.length]);
+    };
+
+    const bulkActions = [
+        {
+            content: "Complete",
+            onAction: () => {
+                handleComplete(selectedTodos, "PUT");
+            },
+        },
+        {
+            content: "Delete",
+            onAction: () => {
+                handleDelete(selectedTodos, "DELETE");
+            },
+        },
+    ];
+
+    const renderItem = (item) => {
+        const { id, title, completed } = item;
+        return (
+            <ResourceItem key={[id, completed]} id={id}>
+                <Text as="h2" variant="bodyMd" truncate={true}>
+                    {title}
+                </Text>
+                <ButtonGroup>
+                    {completed ? <Badge tone="success">Completed</Badge> : <Badge>Pending</Badge>}
+                    <Button
+                        disabled={completed}
+                        onClick={() => {
+                            handleComplete([id], "PUT");
+                        }}
+                    >
+                        Complete
+                    </Button>
+                    <Button
+                        variant="primary"
+                        tone="critical"
+                        onClick={() => {
+                            handleDelete([id], "DELETE");
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </ButtonGroup>
+            </ResourceItem>
+        );
+    };
 
     return (
-        <Page fullWidth>
-            <div className="todo__container">
-                <div className="todo__header">
-                    <p>Todos</p>
-                    <Button onClick={() => todoFormRef.current.setIsOpen(true)}>Create todo</Button>
-                </div>
-                <div className="todo__select">
-                    {listChecked.length ? (
-                        <p>Selected {listChecked.length} todos</p>
-                    ) : (
-                        <p>Showing {todos.length} todos</p>
-                    )}
-                    {listChecked.length ? (
-                        <div>
-                            <Button onClick={handleComlete}>Complete</Button>
-                            <Button variant="primary" tone="critical" onClick={handleDelete}>
-                                Delete
-                            </Button>
-                        </div>
-                    ) : (
-                        ""
-                    )}
-                    <Checkbox
-                        label={"Select All"}
-                        checked={checkAll}
-                        onFocus={() => {
-                            if (!checkAll) {
-                                setCheckAll(true);
-                                setListChecked(todos.map((todo) => todo.id));
-                            } else {
-                                setCheckAll(false);
-                                setListChecked([]);
-                            }
-                        }}
-                    />
-                </div>
-                {todos?.map((todo) => (
-                    <TodoItem
-                        key={todo.id}
-                        todoInfor={todo}
-                        isCheck={listChecked.includes(todo.id)}
-                        setCheck={() => setCheckTodo(todo.id)}
-                        handleComplete={() =>
-                            setTodos((todos) =>
-                                todos.map((todoItem) => {
-                                    if (todoItem.id === todo.id) {
-                                        todoItem.completed = true;
-                                    }
-                                    return todoItem;
-                                })
-                            )
-                        }
-                        handleDelete={() => {
-                            setTodos((todos) => todos.filter((todoItem) => todoItem.id !== todo.id));
-                        }}
-                    />
-                ))}
-            </div>
-            <TodoForm ref={todoFormRef} callbackCreate={createTodo} />
+        <Page
+            title="Todos"
+            primaryAction={
+                <Button
+                    tone="success"
+                    onClick={() => {
+                        todoFormRef.current.setIsOpen(true);
+                    }}
+                >
+                    Create
+                </Button>
+            }
+        >
+            {/* <Button onClick={() => handleComplete(selectedTodos, "PUT")}>test</Button> */}
+            <ResourceList
+                items={todos}
+                renderItem={renderItem}
+                selectable
+                onSelectionChange={setSelectedTodos}
+                selectedItems={selectedTodos}
+                loading={loading}
+                // promotedBulkActions={promotedBulkActions}
+                bulkActions={bulkActions}
+            />
+            <TodoForm
+                ref={todoFormRef}
+                callbackCreate={(data) => {
+                    handleAdd(data);
+                }}
+            />
         </Page>
     );
 };

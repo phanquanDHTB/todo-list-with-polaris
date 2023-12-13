@@ -1,5 +1,4 @@
 import { Modal, TextField } from "@shopify/polaris";
-import "./styles.scss";
 import { forwardRef, useImperativeHandle, useState } from "react";
 
 const TodoForm = forwardRef((props, ref) => {
@@ -46,6 +45,7 @@ const TodoForm = forwardRef((props, ref) => {
         </Modal>
     );
 });
+TodoForm.propTypes = { callbackCreate: () => {} };
 
 TodoForm.displayName = TodoForm;
 

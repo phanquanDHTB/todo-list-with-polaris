@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export const useFetchTodoList = () => {
+export const useFetchTodoList = (uri) => {
     const [fetched, setFetched] = useState(false);
     const [loading, setLoading] = useState(false);
     const [todos, setTodos] = useState([]);
@@ -8,9 +8,9 @@ export const useFetchTodoList = () => {
     async function loadTodoes() {
         try {
             setLoading(true);
-            const response = await fetch("https://jsonplaceholder.typicode.com/todos");
+            const response = await fetch(uri);
             const todoesList = await response.json();
-            setTodos(todoesList);
+            setTodos(todoesList.data);
             setFetched(true);
         } catch (e) {
             console.error(e);
