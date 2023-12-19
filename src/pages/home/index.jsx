@@ -4,8 +4,9 @@ import "./styles.scss";
 import { useEffect, useState } from "react";
 import { fetchApi } from "../../utils/fetchApi";
 import { useModal } from "../../hooks/useModal";
+import {responseStatus} from '../../utils/const.js'
 
-const TodoPage = () => {
+const Home = () => {
     const url = import.meta.env.VITE_URL;
 
     const { todos, setTodos, loading } = useFetchTodoList(url + "todos");
@@ -30,9 +31,9 @@ const TodoPage = () => {
     const handleComplete = async (ids, method) => {
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todo", method, ids);
+            const res = await fetchApi(url + "todos", method, ids);
             const newTodos = await res.json();
-            if (res.status === 200) {
+            if (res.status === responseStatus.sussces) {
                 setTodos(newTodos.data);
             }
         } catch (err) {
@@ -45,8 +46,8 @@ const TodoPage = () => {
         const searchParams = new URLSearchParams({ ids: ids.join(",") });
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todo?" + searchParams.toString(), method, {});
-            if (res.status === 200) {
+            const res = await fetchApi(url + "todos?" + searchParams.toString(), method, {});
+            if (res.status === responseStatus.sussces) {
                 setTodos((todos) => todos.filter((todo) => !ids.includes(todo.id)));
                 setSelectedTodos((selectList) => selectList.filter((select) => !ids.includes(select)));
             }
@@ -60,9 +61,9 @@ const TodoPage = () => {
     const handleAdd = async (data) => {
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todo", "POST", { title: data, completed: false });
+            const res = await fetchApi(url + "todo", "POST", { title: data.trim(), completed: false });
             const newTodo = await res.json();
-            if (res.status === 200) {
+            if (res.status === responseStatus.created) {
                 setTodos((todos) => [...todos, newTodo.data]);
                 setInputValue("");
                 setIsOpen(false);
@@ -142,11 +143,10 @@ const TodoPage = () => {
                 onSelectionChange={setSelectedTodos}
                 selectedItems={selectedTodos}
                 loading={isLoading}
-                // promotedBulkActions={promotedBulkActions}
                 bulkActions={bulkActions}
             />
         </Page>
     );
 };
 
-export default TodoPage;
+export default Home;
