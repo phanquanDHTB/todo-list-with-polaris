@@ -1,56 +1,51 @@
 import { Badge, Button, ButtonGroup, Modal, Page, ResourceItem, ResourceList, Text, TextField } from "@shopify/polaris";
-import { useFetchTodoList } from "../../hooks/useFetchTodoList";
 import "./styles.scss";
 import { useEffect, useState } from "react";
-import { fetchApi } from "../../utils/fetchApi";
+import { fetchData } from "../../utils/fetchData.js";
 import { useModal } from "../../hooks/useModal";
-import {responseStatus} from '../../utils/const.js'
 
 const Home = () => {
     const url = import.meta.env.VITE_URL;
 
-    const { todos, setTodos, loading } = useFetchTodoList(url + "todos");
+    const [todos, setTodos] = useState([]);
     const [selectedTodos, setSelectedTodos] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [inputValue, setInputValue] = useState("");
 
-    const { CustomModal, setIsOpen } = useModal(
-        <Modal.Section>
-            <TextField value={inputValue} onChange={(e) => setInputValue(e)} />
-        </Modal.Section>,
-        {
-            content: "Create",
-            onAction: () => handleAdd(inputValue),
-        }
-    );
-
-    useEffect(() => {
-        setIsLoading(loading);
-    }, [loading]);
-
-    const handleComplete = async (ids, method) => {
+    const fetchTodos = async () => {
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todos", method, ids);
-            const newTodos = await res.json();
-            if (res.status === responseStatus.sussces) {
-                setTodos(newTodos.data);
-            }
+            const { data } = await fetchData(url + "todos");
+            setTodos(data);
         } catch (err) {
             console.log(err);
         } finally {
             setIsLoading(false);
         }
     };
-    const handleDelete = async (ids, method) => {
+
+    useEffect(() => {
+        fetchTodos();
+    }, []);
+
+    const handleComplete = async (ids) => {
+        try {
+            setIsLoading(true);
+            const { data } = await fetchData(url + "todos", "PUT", ids);
+            setTodos(data);
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    const handleDelete = async (ids) => {
         const searchParams = new URLSearchParams({ ids: ids.join(",") });
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todos?" + searchParams.toString(), method, {});
-            if (res.status === responseStatus.sussces) {
-                setTodos((todos) => todos.filter((todo) => !ids.includes(todo.id)));
-                setSelectedTodos((selectList) => selectList.filter((select) => !ids.includes(select)));
-            }
+            await fetchData(url + "todos?" + searchParams.toString(), "DELETE");
+            setTodos((prevTodos) => prevTodos.filter((todo) => !ids.includes(todo.id)));
+            setSelectedTodos((prevSelecteds) => prevSelecteds.filter((selected) => !ids.includes(selected)));
         } catch (err) {
             console.log(err);
         } finally {
@@ -58,16 +53,16 @@ const Home = () => {
         }
     };
 
-    const handleAdd = async (data) => {
+    const handleAdd = async () => {
         try {
             setIsLoading(true);
-            const res = await fetchApi(url + "todo", "POST", { title: data.trim(), completed: false });
-            const newTodo = await res.json();
-            if (res.status === responseStatus.created) {
-                setTodos((todos) => [...todos, newTodo.data]);
-                setInputValue("");
-                setIsOpen(false);
-            }
+            const { data } = await fetchData(url + "todo", "POST", {
+                title: inputValue.trim(),
+                completed: false,
+            });
+            setTodos((prevTodos) => [...prevTodos, data]);
+            setInputValue("");
+            setIsOpen(false);
         } catch (err) {
             console.log(err);
         } finally {
@@ -79,16 +74,35 @@ const Home = () => {
         {
             content: "Complete",
             onAction: () => {
-                handleComplete(selectedTodos, "PUT");
+                handleComplete(selectedTodos);
             },
         },
         {
             content: "Delete",
             onAction: () => {
-                handleDelete(selectedTodos, "DELETE");
+                handleDelete(selectedTodos);
             },
         },
     ];
+
+    const { customModal, setIsOpen } = useModal({
+        content: (
+            <Modal.Section>
+                <TextField value={inputValue} onChange={(e) => setInputValue(e)} />
+            </Modal.Section>
+        ),
+        primaryAction: {
+            content: "Create",
+            onAction: handleAdd,
+        },
+        title: "Add new todo",
+        secondaryActions: [
+            {
+                content: "Cancel",
+                onAction: () => setIsOpen(false),
+            },
+        ],
+    });
 
     const renderItem = (item) => {
         const { id, title, completed } = item;
@@ -102,7 +116,7 @@ const Home = () => {
                     <Button
                         disabled={completed}
                         onClick={() => {
-                            handleComplete([id], "PUT");
+                            handleComplete([id]);
                         }}
                     >
                         Complete
@@ -111,7 +125,7 @@ const Home = () => {
                         variant="primary"
                         tone="critical"
                         onClick={() => {
-                            handleDelete([id], "DELETE");
+                            handleDelete([id]);
                         }}
                     >
                         Delete
@@ -135,7 +149,7 @@ const Home = () => {
                 </Button>
             }
         >
-            {CustomModal}
+            {customModal}
             <ResourceList
                 items={todos}
                 renderItem={renderItem}

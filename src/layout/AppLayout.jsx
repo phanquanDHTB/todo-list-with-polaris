@@ -1,4 +1,5 @@
 import { Frame, TopBar } from "@shopify/polaris";
+import Proptype from "prop-types";
 import "./styles.scss";
 
 const AppLayout = ({ children }) => {
@@ -18,6 +19,6 @@ const AppLayout = ({ children }) => {
     );
 };
 
-AppLayout.propTypes = { children: HTMLElement };
+AppLayout.propTypes = { children: Proptype.element };
 
 export default AppLayout;

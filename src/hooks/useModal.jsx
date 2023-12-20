@@ -1,28 +1,23 @@
 import { Modal } from "@shopify/polaris";
 import { useState } from "react";
 
-export const useModal = (children, primaryAction) => {
+export const useModal = ({ content, primaryAction, title = "Add new item", secondaryActions = [], size = "small" }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const CustomModal = (
+    const customModal = (
         <Modal
             open={isOpen}
-            title="Create a new todo"
+            title={title}
             noScroll={true}
-            size="small"
+            size={size}
             onClose={() => setIsOpen(false)}
             primaryAction={primaryAction}
-            secondaryActions={[
-                {
-                    content: "Cancel",
-                    onAction: () => setIsOpen(false),
-                },
-            ]}
+            secondaryActions={[...secondaryActions]}
         >
-            {children}
+            {content}
         </Modal>
     );
     return {
-        CustomModal,
+        customModal,
         setIsOpen,
     };
 };

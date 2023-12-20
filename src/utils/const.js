@@ -1,5 +1,5 @@
 export const responseStatus = {
-    sussces: 200,
+    success: 200,
     created: 201,
     invalidData: 400,
 };
